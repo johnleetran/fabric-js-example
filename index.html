@@ -1,0 +1,40 @@
+<html>
+
+<!-- Get latest version: https://cdnjs.com/libraries/fabric.js -->
+<script src="lib/fabric.min.js"></script> 
+<body>
+    <input type="file" id="imageFile">
+
+    <canvas id="canvas" width="1024" height="1024" style="border:1px solid #000000;""></canvas>
+    <script>
+        let canvas = new fabric.Canvas('canvas', { preserveObjectStacking: true });
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('#imageFile').addEventListener('change', handleFileInput);
+        });
+
+        async function handleFileInput(e) {
+            console.log("handleFileInput")
+
+            var file = e.target.files[0];
+            var reader = new FileReader();
+            reader.onload = function (f) {
+                var data = f.target.result;
+                fabric.Image.fromURL(data, (img) => {
+                    var oImg = img.set({ left: 0, top: 0 });
+                    canvas.add(oImg)
+                    canvas.setActiveObject(oImg);
+                    canvas.renderAll();
+                });
+            };
+            reader.readAsDataURL(file);
+
+
+
+        }
+        window.onload = async () => {
+
+        }
+    </script>
+
+</body>
+</html>
