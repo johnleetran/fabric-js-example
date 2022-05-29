@@ -2,34 +2,60 @@
 
 <!-- Get latest version: https://cdnjs.com/libraries/fabric.js -->
 <script src="lib/fabric.min.js"></script> 
-<body>
+<body style="background-color:lightblue;">
     <input type="file" id="imageFile">
 
     <canvas id="canvas" width="1024" height="1024" style="border:1px solid #000000;""></canvas>
-    <script>
+    <script type='module'>
+        import * as Magick from './magickApi.js';
+
         let canvas = new fabric.Canvas('canvas', { preserveObjectStacking: true });
         document.addEventListener('DOMContentLoaded', () => {
-            document.querySelector('#imageFile').addEventListener('change', handleFileInput);
+            document.querySelector('#imageFile').addEventListener('change', DoMagickCall);
         });
 
-        async function handleFileInput(e) {
-            console.log("handleFileInput")
+        let DoMagickCall = async function () {
+                let file = event.target.files[0];
+                let reader = new FileReader();
+                reader.readAsArrayBuffer(file);
 
-            var file = e.target.files[0];
-            var reader = new FileReader();
-            reader.onload = function (f) {
-                var data = f.target.result;
-                fabric.Image.fromURL(data, (img) => {
-                    var oImg = img.set({ left: 0, top: 0 });
-                    canvas.add(oImg)
-                    canvas.setActiveObject(oImg);
-                    canvas.renderAll();
-                });
+                let fake_path = document.getElementById('imageFile').value;
+                let inputFileName = fake_path.split("\\").pop();
+
+                reader.onload = async (e) => {
+                    let bits = e.target.result;
+                    let sourceBytes = new Uint8Array(bits);
+                    // calling image magick with one source image, and command to rotate & resize image
+                    const files = [{ 'name': inputFileName, 'content': sourceBytes }];
+                    const command = ["convert", inputFileName, "out.png"];
+                    let processedFiles = await Magick.Call(files, command);
+
+                    // response can be multiple files (example split)
+                    // here we know we just have one
+                    let preview = document.getElementById("preview");
+                    for (let i = 1; i < processedFiles.length; i++) {
+                        let firstOutputImage = processedFiles[i]
+                        let image = new Image();
+                        let linebreak = document.createElement("br");
+
+                        image.src = URL.createObjectURL(firstOutputImage['blob'])
+                        handleFileInput(image.src)
+                        // //image.width = 150;
+                        // preview.appendChild(linebreak)
+                        // preview.appendChild(image)
+                        // console.log("created image " + firstOutputImage['name'])
+                    }
+                };
             };
-            reader.readAsDataURL(file);
 
-
-
+        async function handleFileInput(data) {
+            console.log("handleFileInput")
+            fabric.Image.fromURL(data, (img) => {
+                var oImg = img.set({ left: 0, top: 0 });
+                canvas.add(oImg)
+                canvas.setActiveObject(oImg);
+                canvas.renderAll();
+            });
         }
         window.onload = async () => {
 
