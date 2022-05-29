@@ -1,66 +1,128 @@
 <html>
 
 <!-- Get latest version: https://cdnjs.com/libraries/fabric.js -->
+<head>
 <script src="lib/fabric.min.js"></script> 
+<script type='module'>
+    import * as Magick from './magickApi.js';
+    var canvas = new fabric.Canvas('canvas', { preserveObjectStacking: true });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelector('#imageFile').addEventListener('change', DoMagickCall);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelector('#bringToFrontButton').addEventListener('click', bringToFront);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelector('#bringForwardButton').addEventListener('click', bringForward);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelector('#sendToBackButton').addEventListener('click', sendToBack);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelector('#sendBackwardsButton').addEventListener('click', sendBackwards);
+    });
+
+    async function bringToFront() {
+        console.log("bringToFront")
+        let activeSelection = canvas.getActiveObjects();
+        console.log(activeSelection)
+
+        for (let i = 0; i < activeSelection.length; i++) {
+            canvas.bringToFront(activeSelection[0])
+        }
+    }
+
+    async function bringForward() {
+        console.log("bringForward")
+        let activeSelection = canvas.getActiveObjects();
+        console.log(activeSelection)
+
+        for (let i = 0; i < activeSelection.length; i++) {
+            canvas.bringForward(activeSelection[0])
+        }
+    }
+
+    async function sendToBack() {
+        console.log("bringForward")
+        let activeSelection = canvas.getActiveObjects();
+        console.log(activeSelection)
+
+        for (let i = 0; i < activeSelection.length; i++) {
+            canvas.sendToBack(activeSelection[0])
+        }
+    }
+
+    async function sendBackwards() {
+        console.log("bringForward")
+        let activeSelection = canvas.getActiveObjects();
+        console.log(activeSelection)
+
+        for (let i = 0; i < activeSelection.length; i++) {
+            canvas.sendBackwards(activeSelection[0])
+        }
+    }
+
+    async function DoMagickCall() {
+        let file = event.target.files[0];
+        let reader = new FileReader();
+        reader.readAsArrayBuffer(file);
+
+        let fake_path = document.getElementById('imageFile').value;
+        let inputFileName = fake_path.split("\\").pop();
+
+        reader.onload = async (e) => {
+            let bits = e.target.result;
+            let sourceBytes = new Uint8Array(bits);
+            // calling image magick with one source image, and command to rotate & resize image
+            const files = [{ 'name': inputFileName, 'content': sourceBytes }];
+            const command = ["convert", inputFileName, "out.png"];
+            let processedFiles = await Magick.Call(files, command);
+
+            // response can be multiple files (example split)
+            // here we know we just have one
+            let preview = document.getElementById("preview");
+            for (let i = 1; i < processedFiles.length; i++) {
+                let firstOutputImage = processedFiles[i]
+                let image = new Image();
+                let linebreak = document.createElement("br");
+
+                image.src = URL.createObjectURL(firstOutputImage['blob'])
+                console.log(firstOutputImage)
+                handleFileInput(image.src)
+                // //image.width = 150;
+                // preview.appendChild(linebreak)
+                // preview.appendChild(image)
+                // console.log("created image " + firstOutputImage['name'])
+            }
+        };
+    };
+
+    async function handleFileInput(data) {
+        console.log("handleFileInput")
+        fabric.Image.fromURL(data, (img) => {
+            var oImg = img.set({ left: 0, top: 0 });
+            canvas.add(oImg)
+            canvas.setActiveObject(oImg);
+            canvas.renderAll();
+        });
+    }
+</script>
+</head>
+
 <body style="background-color:lightblue;">
+    <button type="button" id="bringToFrontButton">Bring to Front</button>
+    <button type="button" id="bringForwardButton">Bring Forward</button>
+    <button type="button" id="sendToBackButton">Send To Back</button>
+    <button type="button" id="sendBackwardsButton">Send Backwards</button>
+
     <input type="file" id="imageFile">
 
     <canvas id="canvas" width="1024" height="1024" style="border:1px solid #000000;""></canvas>
-    <script type='module'>
-        import * as Magick from './magickApi.js';
-
-        let canvas = new fabric.Canvas('canvas', { preserveObjectStacking: true });
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelector('#imageFile').addEventListener('change', DoMagickCall);
-        });
-
-        let DoMagickCall = async function () {
-                let file = event.target.files[0];
-                let reader = new FileReader();
-                reader.readAsArrayBuffer(file);
-
-                let fake_path = document.getElementById('imageFile').value;
-                let inputFileName = fake_path.split("\\").pop();
-
-                reader.onload = async (e) => {
-                    let bits = e.target.result;
-                    let sourceBytes = new Uint8Array(bits);
-                    // calling image magick with one source image, and command to rotate & resize image
-                    const files = [{ 'name': inputFileName, 'content': sourceBytes }];
-                    const command = ["convert", inputFileName, "out.png"];
-                    let processedFiles = await Magick.Call(files, command);
-
-                    // response can be multiple files (example split)
-                    // here we know we just have one
-                    let preview = document.getElementById("preview");
-                    for (let i = 1; i < processedFiles.length; i++) {
-                        let firstOutputImage = processedFiles[i]
-                        let image = new Image();
-                        let linebreak = document.createElement("br");
-
-                        image.src = URL.createObjectURL(firstOutputImage['blob'])
-                        handleFileInput(image.src)
-                        // //image.width = 150;
-                        // preview.appendChild(linebreak)
-                        // preview.appendChild(image)
-                        // console.log("created image " + firstOutputImage['name'])
-                    }
-                };
-            };
-
-        async function handleFileInput(data) {
-            console.log("handleFileInput")
-            fabric.Image.fromURL(data, (img) => {
-                var oImg = img.set({ left: 0, top: 0 });
-                canvas.add(oImg)
-                canvas.setActiveObject(oImg);
-                canvas.renderAll();
-            });
-        }
-        window.onload = async () => {
-
-        }
-    </script>
 
 </body>
 </html>
